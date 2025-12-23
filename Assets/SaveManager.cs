@@ -4,18 +4,19 @@ using System.IO;
 using System.Collections.Generic;
 using SimpleJSON;
 using CustomFileFunc;
+using JetBrains.Annotations;
 
 public class SaveManager : MonoBehaviour
 {
     public static SaveManager current;
     public string sceneString;
-    public SaveManagersData saveManagersData;
 
     // public event Action saveDataEvent;
     public event Action<GameObject> savePositionEvent;
     public event Action saveDataEvent;
     // public Dictionary<string, JSONNode> curJsonObjects = new Dictionary<string, JSONNode>();
     public Dictionary<string, JSONArray> curJsonObjects = new Dictionary<string, JSONArray>();
+    public Dictionary<string, Dictionary<string, JSONArray>> fuck = new Dictionary<string, Dictionary<string, JSONArray>>();
     public void SaveToCurJsonObjects(string fileName, JSONObject jsonObject, int objectID)
     {
         JSONArray arr;
@@ -41,34 +42,16 @@ public class SaveManager : MonoBehaviour
 
     }
 
-    [System.Serializable]
-    public class SaveManagersData
-    {
-        public List<SavePositionData> positionData = new List<SavePositionData>();
-        public List<ISaveData> savedDatas = new List<ISaveData>();
-        public void CreateEmptyList()
-        {
-            positionData = new List<SavePositionData>();
-        }
-        public void LoadAllData()
-        {
-            foreach (ISaveData data in savedDatas)
-            {
-                data.LoadDataValue();
-            }
-        }
-    }
-
     public class SaveManagersStringFiles
     {
         public List<string> dataFileLocations = new List<string>();
     }
+    public SaveManagersStringFiles savedFilesString;
 
     //File locaitons
-    private string saveJsonData;
-    private string dataFileLocation;
-    private string saveUsedFiles;
-    private const string saveFileFolders = "SceneData";
+    
+    private const string SAVEFILEFOLDER = "SceneData";
+    private const string DATAFOLDERLOCATIONS = "DataFolderLocations";
 
 
     void OnEnable()
@@ -79,36 +62,9 @@ public class SaveManager : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        string sceneDataLocation = CustomFuncs.GetFileByNameFolder(saveFileFolders);
+        SafteyStartFile();
 
 
-
-        //Get the folder and json file location
-        //Create datafile locations if needed
-        //Create folder if needed
-        //Create json if needed
-
-
-        dataFileLocation = CustomFuncs.GetFileByNameJson(sceneString);
-        // if (!File.Exists(jsonFileLocation))
-        // {
-        //     File.Create(jsonFileLocation);
-        // }
-
-        if (File.ReadAllText(jsonFileLocation) == "")
-        {
-            saveManagersData = new SaveManagersData();
-        }
-        else
-        {
-            saveJsonData = File.ReadAllText(jsonFileLocation);
-            saveManagersData = JsonUtility.FromJson<SaveManagersData>(saveJsonData);
-            // var data = JSONNode.LoadFromBinaryFile(saveJsonData);
-            var data = JSONNode.Parse(saveJsonData);
-            // saveManagersData = JSONNode.Parse(saveJsonData);
-
-            LoadDataFromJson(saveManagersData);
-        }
     }
 
     // Update is called once per frame
@@ -121,7 +77,7 @@ public class SaveManager : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.J))
         {
-            SaveDataToJson(saveManagersData);
+            SaveDataToJson();
         }
 
 
@@ -131,7 +87,6 @@ public class SaveManager : MonoBehaviour
     
     private void SaveDataEvents()
     {
-        saveManagersData.CreateEmptyList();
         if (savePositionEvent != null)
         {
 
@@ -140,21 +95,46 @@ public class SaveManager : MonoBehaviour
         //put in all saved keys into an array and save that as a JSONARRAY into a seperate file using the saveUsedFiles variable
     }
 
-    private void SaveDataToJson(SaveManagersData data)
+    private void SaveDataToJson()
     {
-        saveJsonData = JsonUtility.ToJson(data, true);
-
-        File.WriteAllText(jsonFileLocation, saveJsonData);
+        
     }
 
     //This ensures that if a different object tries to load data from the savemanager but there is no file it will create one.
     //Really just a saftey measure so no weird errors happen with accessing the files
     private void SafteyStartFile()
     {
-        string sceneDataLocation = CustomFuncs.GetFileByNameFolder(saveFileFolders);
-        string mainDataFolder = CustomFuncs.GetFileByNameFolder(sceneString, saveFileFolders);
-        CustomFuncs.CreateFolder(sceneDataLocation);
-        string 
+
+        string sceneDataLocation = CustomFuncs.GetFileByNameFolder(SAVEFILEFOLDER);
+        string mainDataFolder = CustomFuncs.GetFileByNameFolder(sceneString, SAVEFILEFOLDER);
+        string currentFolder = SAVEFILEFOLDER + Path.AltDirectorySeparatorChar + sceneString;//This holds the extra strings that lead us to the scenes specific folder.
+        string dataFolderLocations = CustomFuncs.GetFileByNameJson(DATAFOLDERLOCATIONS, currentFolder);
+        if (File.Exists(CustomFuncs.GetFileByNameJson(dataFolderLocations)))
+        {
+            CustomFuncs.CreateFolder(sceneDataLocation);
+            CustomFuncs.CreateFolder(mainDataFolder);
+            CustomFuncs.CreateJsonFile(dataFolderLocations);
+            if (File.ReadAllText(dataFolderLocations) == "")
+            {
+                savedFilesString = new SaveManagersStringFiles();
+            }
+            else
+            {
+                savedFilesString = JsonUtility.FromJson<SaveManagersStringFiles>(File.ReadAllText(dataFolderLocations));
+                if (savedFilesString.dataFileLocations.Count > 0)
+                {
+                    foreach (string file in savedFilesString.dataFileLocations)
+                    {
+                        fuck.Add(file, )
+                    }
+                }
+            }
+
+
+
+        }
+
+        
 
 
         //Get the folder and json file location
